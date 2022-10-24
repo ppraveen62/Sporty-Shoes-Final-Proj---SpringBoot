@@ -1,0 +1,1568 @@
+Codes:
+
+Users.java
+package com.example.demo;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class users {
+		@Id
+	    @GeneratedValue(strategy = GenerationType.IDENTITY)
+		private int userid;
+		private String username;
+		private String password;
+		private String role;
+		private Boolean enabled;
+		private String name;
+		private String useremail;
+		private String contactno; 
+		private String adress;
+		private String pincode;
+}
+
+usersDao
+package com.example.demo;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class usersDao {
+	
+	@Autowired
+	usersrepositry repo;
+
+	public users insert(users u) {
+		return repo.save(u);
+		
+	}
+	
+	//retrieve
+	public List<users> getusers() {
+		return repo.findusers();
+	}
+	
+}
+usersrepositry
+package com.example.demo;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+public interface usersrepositry extends JpaRepository<users,Integer> {
+	
+	@Query("select users from  users users where role='USER'")
+	public List<users> findusers();
+
+}
+
+Product.java
+package com.example.demo;
+
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class product {
+		@Id
+	   
+		private Long productid;
+		private String productcategory;
+		private String productname;
+		private String productprice;
+		private String productdescription;
+}
+
+productDao.java
+package com.example.demo;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class productDao {
+	
+	@Autowired
+	productrepositry repo;
+
+	public product insert(product p) {
+		return repo.save(p);
+		
+	}
+	
+	//retrieve
+	public List<product> getproduct() {
+		return repo.findAll(); 
+	}
+	
+	public product delete(long id) {
+		repo.deleteById(id);
+		return null;
+	}
+	
+	public List<product> getproductbycategory(String name) {
+		return repo.findproductbycategory(name);
+	}
+
+
+	
+}
+
+Productrepositry.java
+package com.example.demo;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+public interface productrepositry extends JpaRepository<product,Long> {
+	
+	@Query("select product from product product where productcategory=?1")
+	public List<product> findproductbycategory(String name);
+	
+	
+}
+
+Cart.java
+package com.example.demo;
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.UniqueConstraint;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class cart {
+	@Id
+	@GeneratedValue
+	
+	private long cartid;
+	private String username;
+	private Long productid;
+	private String productcategory;
+	private String productname;
+	private String productprice;
+	
+	private String orderno;
+	@DateTimeFormat(pattern="dd-MM-yyyy")
+	private Date dateofpurchase;
+	private String payment;
+}
+cartDao.java
+package com.example.demo;
+
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class cartDao {
+	
+	@Autowired
+	cartrepositry repo;
+	
+	public cart insert(cart c) {
+		return repo.save(c);
+		
+	}
+	
+	
+	public cart deletebyid(long id) {
+		repo.deleteById(id);
+		return null;
+	}
+	
+	public List<cart> getcartbyusername(String name) {
+		return repo.findcartbyusername(name);
+	}
+	
+	
+	public List<cart> getcartbypayment() {
+		return repo.findcartbypayment();
+	}
+	
+	public  void updatebyuser(Date Date,String orderno,String payment ,String username) {
+		 repo.updatebyuser(Date, orderno, payment, username);
+		 
+		
+		
+	}
+	
+	
+	
+}
+
+Cartrepositry.java
+package com.example.demo;
+
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
+
+public interface cartrepositry extends JpaRepository<cart,Long> {
+	
+	@Query("select cart from cart cart where username=?1 and payment='notpaid'")
+	public List<cart> findcartbyusername(String name);
+
+	@Transactional
+	@Modifying
+	@Query("update cart set dateofpurchase=?1,orderno=?2,payment=?3 where username=?4 and payment='notpaid'")
+	public  void updatebyuser(Date date,String orderno,String payment ,String username);
+	
+	@Query("select cart from cart cart where payment='paid'")
+	public List<cart> findcartbypayment();
+	
+	
+}
+
+mainController.java
+package com.example.demo;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+
+@Controller
+@RequestMapping("/")
+public class mainController {
+
+	
+	@Autowired
+	usersDao udao;
+	
+	@Autowired
+	productDao pdao;
+	
+	@Autowired
+	cartDao cdao;
+	
+	
+	public String amount;
+	public String id;
+	
+	@RequestMapping("/")
+	public ModelAndView displaydefaultpage(HttpServletRequest request,HttpServletResponse response)
+	{
+		
+		ModelAndView mv=new ModelAndView();
+		mv.setViewName("home.jsp");
+		return mv;
+	}
+	
+	@RequestMapping("/loginhome")
+	public ModelAndView adminhome(HttpServletRequest request,HttpServletResponse response)
+	{	
+		ModelAndView mv=new ModelAndView();
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String role=authentication.getAuthorities().stream().findAny().get().getAuthority();
+		System.out.println(role);
+		if (role.equals("ADMIN")) {
+			
+			mv.setViewName("adminHome.jsp");
+		}
+		if (role.equals("USER")) {
+							
+			mv.setViewName("userHome.jsp");
+		}
+		return mv;
+	}
+	
+	
+	@RequestMapping("/updatepassword")
+	public ModelAndView updatepassword(users u ,HttpServletRequest request,HttpServletResponse response) throws IOException {
+		ModelAndView mv=new ModelAndView();
+		u.setUserid(1);
+		u.setUsername("admin");
+		u.setEnabled(true);
+		u.setRole("ADMIN");
+		u.setPassword(request.getParameter("password"));
+		udao.insert(u);
+		mv.setViewName("updatesucesshome.jsp");
+		return mv;
+	}
+	
+	@RequestMapping("/userRegistration")
+	public ModelAndView registeruserdetails(users u ,HttpServletRequest request,HttpServletResponse response) throws IOException {
+		ModelAndView mv=new ModelAndView();
+		u.setUsername(request.getParameter("username"));
+		u.setPassword(request.getParameter("password"));
+		u.setName(request.getParameter("name"));
+		u.setContactno(request.getParameter("contactno"));
+		u.setPincode(request.getParameter("pincode"));
+		u.setName(request.getParameter("useremail"));
+		u.setName(request.getParameter("adress"));
+		u.setEnabled(true);
+		u.setRole("USER");
+		
+		udao.insert(u);
+		mv.setViewName("updatesucesshome.jsp");
+		return mv;
+	}
+	
+	
+	@RequestMapping("/listusers")
+	public ModelAndView getalluser(HttpServletRequest request,HttpServletResponse response) {
+		ModelAndView mv=new ModelAndView();
+		List<users> list=udao.getusers();
+		mv.setViewName("userlist.jsp");
+		mv.addObject("list", list);
+		return mv;
+	}
+
+	
+	
+	@RequestMapping("/searchuser")
+	public ModelAndView getuser(users u,HttpServletRequest request,HttpServletResponse response) {
+		ModelAndView mv=new ModelAndView();
+		List<users> list=udao.getusers();
+		mv.setViewName("userlistsearch.jsp");
+		mv.addObject("list", list);
+		u.setUsername(request.getParameter("username"));
+		return mv;
+	}
+	
+	
+	@RequestMapping("/addproduct")
+	public ModelAndView addproductdetails(product p ,HttpServletRequest request,HttpServletResponse response) throws IOException {
+		ModelAndView mv=new ModelAndView();
+		
+		String pid=request.getParameter("productid");
+		if (pid=="") {
+			pid = "0";
+		}
+		Long id=Long.parseLong(pid);
+		String pcategory=request.getParameter("productcategory");
+		String pname=request.getParameter("productname");
+		String pprice=request.getParameter("productprice");
+		if (pprice=="") {
+			pprice= "0";
+		}
+		Double price=Double.parseDouble(pprice);
+		String pdesc=request.getParameter("productdescription");
+		
+		if(id!=0 && pcategory!="" && pname!="" && price!=0 &&pdesc!="") {
+
+			p.setProductid(Long.parseLong(request.getParameter("productid")));
+			p.setProductcategory(request.getParameter("productcategory"));
+			p.setProductname(request.getParameter("productname"));
+			p.setProductprice(request.getParameter("productprice"));
+			p.setProductdescription(request.getParameter("productdescription"));
+			pdao.insert(p);
+			mv.setViewName("listproduct");
+		}
+		
+		if(id==0 || pcategory=="" || pname=="" || price==0 || pdesc=="") {
+			
+			mv.setViewName("addProduct.jsp");
+	
+		}
+		
+		return mv;
+	}
+	
+	
+	@RequestMapping("/updateproduct")
+	public ModelAndView updateproductdetails(product p ,HttpServletRequest request,HttpServletResponse response) throws IOException {
+		ModelAndView mv=new ModelAndView();
+		
+		String pcategory=request.getParameter("productcategory");
+		String pname=request.getParameter("productname");
+		String pprice=request.getParameter("productprice");
+		if (pprice=="") {
+			pprice= "0";
+		}
+		Double price=Double.parseDouble(pprice);
+		String pdesc=request.getParameter("productdescription");
+		
+		if( pcategory!="" && pname!="" && price!=0 &&pdesc!="") {
+		
+		
+			p.setProductid(Long.parseLong(request.getParameter("productid")));
+			p.setProductcategory(request.getParameter("productcategory"));
+			p.setProductname(request.getParameter("productname"));
+			p.setProductprice(request.getParameter("productprice"));
+			p.setProductdescription(request.getParameter("productdescription"));
+			pdao.insert(p);
+			mv.setViewName("listproduct");
+		}
+		
+		if(pcategory=="" || pname=="" || price==0 || pdesc=="") {
+			
+			mv.setViewName("updateProduct.jsp");
+	
+		}
+		return mv;
+	}
+	
+	@RequestMapping("/deleteproduct")
+	public ModelAndView deleteproductdetails(HttpServletRequest request,HttpServletResponse response) throws IOException {
+		ModelAndView mv=new ModelAndView();
+		long id =Long.parseLong(request.getParameter("productid"));
+		pdao.delete(id);
+		mv.setViewName("listproduct");
+		return mv;
+	}
+	
+	
+
+	@RequestMapping("/listproduct")
+	public ModelAndView getallproduct(HttpServletRequest request,HttpServletResponse response) {
+		ModelAndView mv=new ModelAndView();
+		List<product> list=pdao.getproduct();
+		mv.setViewName("productmodify.jsp");
+		mv.addObject("list", list);
+		return mv;
+	}
+	
+	@RequestMapping("/purchasereport")
+	public ModelAndView showcartbypatment(cart c, HttpServletRequest request,HttpServletResponse response)  {
+		ModelAndView mv=new ModelAndView();
+	    List<cart> list=cdao.getcartbypayment();
+	    mv.addObject("list", list);
+		mv.setViewName("purchaseReports.jsp");
+		return mv;
+	}
+	
+	/////////////////////////
+	
+	@RequestMapping("/productbycategory")
+	public ModelAndView getproductbycategory(HttpServletRequest request,HttpServletResponse response) {
+		ModelAndView mv=new ModelAndView();
+		List<product> list=pdao.getproductbycategory(request.getParameter("productcategory"));
+		mv.setViewName("productbyCategory.jsp");
+		mv.addObject("list", list);
+		return mv;
+	}
+	
+	@RequestMapping("/addtocart")
+	public ModelAndView addcart(cart c, HttpServletRequest request,HttpServletResponse response)  {
+		ModelAndView mv=new ModelAndView();
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		
+	    String username = auth.getName();
+		Long productid=Long.parseLong(request.getParameter("productid"));
+		String productname=request.getParameter("productname");
+		String productPrice=request.getParameter("productprice");
+		String productcategory=request.getParameter("productcategory");
+		
+		c.setUsername(username);
+		c.setProductid(productid);
+		c.setProductname(productname);
+		c.setProductcategory(productcategory);
+		c.setProductprice(productPrice);
+		c.setPayment("notpaid");
+		cdao.insert(c);
+		mv.setViewName("addcartsucess.jsp");
+		return mv;
+	}
+	
+	@RequestMapping("/showCart")
+	public ModelAndView showcart(cart c, HttpServletRequest request,HttpServletResponse response)  {
+		ModelAndView mv=new ModelAndView();
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    String username = auth.getName();
+	    List<cart> list=cdao.getcartbyusername( username);
+	    mv.addObject("list", list);
+		mv.setViewName("showcart.jsp");
+		return mv;
+	}
+	
+	@RequestMapping("/failpayment")
+	public ModelAndView showcart2(cart c, HttpServletRequest request,HttpServletResponse response)  {
+		ModelAndView mv=new ModelAndView();
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    String username = auth.getName();
+	    List<cart> list=cdao.getcartbyusername( username);
+	    mv.addObject("list", list);
+		mv.setViewName("failpayshowcart.jsp");
+		return mv;
+	}
+	
+	@RequestMapping("/removefromcart")
+	public ModelAndView removefromcart(cart c, HttpServletRequest request,HttpServletResponse response)  {
+		ModelAndView mv=new ModelAndView();
+		long id=Long.parseLong(request.getParameter("cartid"));
+		cdao.deletebyid(id);
+		mv.setViewName("showCart");
+		return mv;
+	}
+	
+	@RequestMapping("/paymentcheck")
+	public ModelAndView paymentcheck( HttpServletRequest request,HttpServletResponse response) throws ParseException  {
+		ModelAndView mv=new ModelAndView();
+		 String cardnum=request.getParameter("cardno");
+		 String month=request.getParameter("month");
+		 String pswrd=request.getParameter("psd");
+		 System.out.println("check");
+		 
+		 if (cardnum=="") {
+				cardnum = "0";
+			}
+		 Long cardno=Long.parseLong(cardnum);
+		 
+		if(cardno!=0 && month!="" && pswrd!="") {
+			amount=request.getParameter("amt");
+			id=request.getParameter("order");
+			 mv.setViewName("paid.jsp");
+			 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			 String username = auth.getName();
+	         Date dNow = new Date( );
+	         SimpleDateFormat ft =new SimpleDateFormat ("dd-MM-yyyy");
+	         String dt1=ft.format(dNow);
+	         Date date=new SimpleDateFormat("dd-MM-yyyy").parse(dt1);  
+			 String orderno=request.getParameter("order");
+			 String payment="paid";
+			 
+			 cdao.updatebyuser(date, orderno, payment,username);
+			 
+		}
+		else {
+			mv.setViewName("failpayment");
+		}
+		return mv;
+	}
+
+}
+
+SecurityConfig.java
+package com.example.demo;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+	
+	 @Autowired
+	    DataSource dataSource;
+	
+	@Override
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+		
+		auth.jdbcAuthentication()
+        .dataSource(dataSource)
+        .usersByUsernameQuery("select username, password, enabled from users where username=?")
+        .authoritiesByUsernameQuery("select username, role from users where username=?");
+
+		}
+		
+	@Bean
+	public PasswordEncoder getpassword() {
+		return NoOpPasswordEncoder.getInstance();
+	}
+	
+	//authorize
+		@Override
+		protected void configure(HttpSecurity http) throws Exception {
+		http.authorizeRequests()
+	
+		.antMatchers("/updatepassword").hasAuthority("ADMIN")
+		.antMatchers("/listusers").hasAuthority("ADMIN")
+		.antMatchers("/searchuser").hasAuthority("ADMIN")
+		.antMatchers("/addproduct").hasAuthority("ADMIN")
+		.antMatchers("/updateproduct").hasAuthority("ADMIN")
+		.antMatchers("/deleteproduct").hasAuthority("ADMIN")
+		.antMatchers("/listproduct").hasAuthority("ADMIN")
+		.antMatchers("/purchasereport").hasAuthority("ADMIN")
+		
+	
+		.antMatchers("/productbycategory").hasAuthority("USER")
+		.antMatchers("/addtocart").hasAuthority("USER")
+		.antMatchers("/showCart").hasAuthority("USER")
+		.antMatchers("/failpayment").hasAuthority("USER")
+		.antMatchers("/removefromcart").hasAuthority("USER")
+		.antMatchers("/paymentcheck").hasAuthority("USER")
+		
+		
+		.antMatchers("/loginhome").hasAnyAuthority("ADMIN","USER")
+		
+		.antMatchers("/").permitAll()
+		.antMatchers("/userRegistration").permitAll()
+		
+		.and().formLogin().defaultSuccessUrl("/loginhome")
+		.and().logout().logoutSuccessUrl("/");
+		
+		
+		}
+
+	
+
+	}
+
+SportyShoesApplication.java
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SportyShoesApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SportyShoesApplication.class, args);
+	}
+
+}
+Jsp
+Home.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Home</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<div align="center">
+	 
+		<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4>
+		
+		<br><br>
+		
+		
+		<h1>Welcome, Shop According to Your Sports</h1><br>
+		
+			
+			<b> <input style=font-size:24px type="button" onclick="window.location.href='login';" value="Admin Signin"  /></b><br><br><br>
+			
+			
+			<b> <input style=font-size:24px type="button" onclick="window.location.href='login';" value="  User Signin " /></b><br><br>
+			<h3><a href='userRegistration.jsp' style="text-decoration: none">new here? Create Account</a></h3>
+		
+			
+			
+		</form>
+	
+	</div>
+</body>
+</html>
+userRegistration.jsp
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Register</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		<br><br>
+		<h3>Enter Details</h3>
+		<form action="userRegistration"><br>
+	
+			<table>
+			<tr>
+			<td><b>Name</b></td>
+			<td><input type ="text" name="name"  ></td>
+			</tr>
+			<tr>
+			<td><b>Email</b></td>
+			<td><input type ="email" name="useremail"  ></td>
+			</tr>
+			<tr>
+			<td><b>Phone no</b></td>
+			<td><input type ="number" name="contactno"  ></td>
+			</tr>
+			<tr>
+			<td><b>Address</b></td>
+			<td><input type ="text" name="adress"  ></td>
+			</tr>
+			<tr>
+			<td><b>Pincode</b></td>
+			<td><input type ="number" name="pincode"  ></td>
+			</tr>
+			<tr>
+			<td><b>Username</b></td>
+			<td><input type ="text" name="username"  ></td>
+			</tr>
+			<tr>
+			<td><b>Password</b></td>
+			<td><input type ="password" name="password"  ></td>
+			</tr>
+			
+			</table>
+			
+			<br><input type ="submit"  value="Register">
+		</form>
+		
+		
+	</div>
+		
+		
+
+</body>
+</html>
+adminHome.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Admin Home</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		 	<h3 align="right"><a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		<h1>Home</h1>
+		<h3><a href='changepassword.jsp' style="text-decoration: none">Change Password</a></h3>
+		<h3><a href='listproduct' style="text-decoration: none">Add, Delete or Update Products</a></h3>
+		<h3><a href='listusers' style="text-decoration: none">List of Users</a></h3>
+		<h3><a href='purchasereport' style="text-decoration: none">Purchase Reports</a></h3>
+		</div>
+</body>
+</html>
+
+Changepassword.jsp
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Change Password</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	<div align="center">
+		<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		 	<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		<form action="updatepassword" >
+			
+			<b>Enter New password  </b><input type ="Password" name="password" ><br><br>
+			
+			<input type="submit" name="update"  value="Change Password">
+		</form>
+		</div>
+		
+
+</body>
+</html>
+
+
+userlist.jsp
+
+<%@page import="com.example.demo.users"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>userlist</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+	List<users> list=(List<users>)request.getAttribute("list");
+	%>
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		
+
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		
+		<form action="searchuser">
+			<b>Search by Username  </b><input type ="text" name="username">
+			<input type ="submit" name="ok" value="Search">
+		</form>
+		
+		<br><br>
+		
+	<table border="1" cellpadding ="5" cellspacing ="5"> 
+	<tr><th>User Id</th><th>Name</th><th>UserName</th><th>Email</th><th>Address</th><th>Contact No</th><th>Pincode</th></tr>
+	<%for(users u:list){ %>
+	<tr><td><%=u.getUserid()%></td><td><%=u.getName() %></td><td><%=u.getUsername() %></td><td><%=u.getUseremail()%></td><td><%=u.getAdress()%></td><td><%=u.getContactno()%></td><td><%=u.getPincode()%></td></tr>
+	<%}%>
+	</table>
+
+		
+	</div>
+	
+	
+	
+
+</body>
+</html>
+userlistSearch.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>userlistsearch</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+	List<users> list=(List<users>)request.getAttribute("list");
+	%>
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		
+	<table border="1" cellpadding ="5" cellspacing ="5"> 
+	<tr><th>User Id</th><th>Name</th><th>UserName</th><th>Email</th><th>Address</th><th>Contact No</th><th>Pincode</th></tr>
+	<%
+		int i=0;
+		for(users u:list){ 
+			if (u.getUsername().equals(request.getParameter("username")))  {
+				i+=1; 
+				%>
+					<tr><td><%=u.getUserid()%></td><td><%=u.getName() %></td><td><%=u.getUsername() %></td><td><%=u.getUseremail()%></td><td><%=u.getAdress()%></td><td><%=u.getContactno()%></td><td><%=u.getPincode()%></td></tr>
+				<%
+				}
+			}
+		if (i==0){
+			%>username not found!<% 
+		}
+	%>
+	</table>
+		
+		
+	</div>
+	
+	
+	
+
+</body>
+</html>
+purchaseReports.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>purchase reports</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+	List<cart> list=(List<cart>)request.getAttribute("list");
+	%>
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		
+		
+	<table border="1" cellpadding ="5" cellspacing ="5"> 
+	<tr><th>Purchased Date</th><th>Order Id</th><th>product Id</th><th>Product Category</th><th>Product price</th><th>Customer Username</th></tr>
+	<%for(cart c:list){ %>
+	<tr><td><%=c.getDateofpurchase()%></td><td><%=c.getOrderno() %></td><td><%=c.getProductid() %></td><td><%=c.getProductcategory()%></td><td><%=c.getProductprice()%></td>
+	<td><%=c.getProductprice() %></td>
+	</tr>
+	<%}%>
+	</table>
+		
+		
+	</div>
+	
+	
+	
+
+</body>
+</html>
+addProduct.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>add product</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+		<br><br>
+		<h3>Enter Details</h3>
+		<form action="addproduct"><br>
+	
+			<table>
+			<tr>
+			<td><b>Product Id</b></td>
+			<td><input type ="number" name="productid"  ></td>
+			</tr>
+			<tr>
+			<td><b>Product Category</b></td>
+				<td><select  name="productcategory">
+                        <option value="Running shoes">Running shoes</option>
+                        <option value="Minimalist shoes">Minimalist shoes</option>
+                        <option value="Walking shoes">Walking shoes</option>
+                        <option value="Tennis shoes">Tennis shoes</option>
+                        <option value="Versatile training shoes">Versatile training shoes</option>
+                        <option value="Trail running shoes">Trail running shoes</option>
+                        <option value="Basketball shoes">Basketball shoes</option>
+                        <option value="Football boots">Football boots</option>
+                       
+                    </select></td>
+			</tr>
+			<tr>
+			<td><b>Product Name</b></td>
+			<td><input type ="text" name="productname"  ></td>
+			</tr>
+			<tr>
+			<td><b>Product Price Rs</b></td>
+			<td><input type ="number" name="productprice"  >/-</td>
+			</tr>
+			<tr>
+			<td><b>Product Description</b></td>
+			<td><input type ="text" name="productdescription"  ></td>
+			</tr>
+			
+			</table>
+			
+			<br><input type ="submit"  value="Add Product">
+		</form>
+		
+		
+	</div>
+		
+		
+
+</body>
+</html>
+productmodify.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>product modify</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+	List<product> list=(List<product>)request.getAttribute("list");
+	%>
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		<form action="addProduct.jsp">
+			<input type ="submit" name="ok" value="Add Product">
+		</form>
+		<br><br>
+		
+	<table border="1" cellpadding ="5" cellspacing ="5"> 
+	<tr><th>Product Id</th><th>Product Category</th><th>Product Name</th><th>Product price</th><th>Product Description</th></tr>
+	<%for(product p:list){ %>
+	<tr><td><%=p.getProductid()%></td><td><%=p.getProductcategory() %></td><td><%=p.getProductname() %></td><td><%=p.getProductprice()%></td><td><%=p.getProductdescription()%></td>
+	<td><form action="updateProduct.jsp"><input type="hidden" id="productid" name="productid" value=<%=p.getProductid() %>><input type="submit" value="Edit" ></form></td>
+	<td><form action="deleteproduct"><input type="hidden" id="productid" name="productid" value=<%=p.getProductid() %>><input type="submit" value="Delete" ></form></td>
+	</tr>
+	<%}%>
+	</table>
+		
+		
+	</div>
+	
+	
+	
+
+</body>
+</html>
+updateProduct.jsp
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>update product</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		<h3 align="right"><a href='adminHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+		<br><br>
+		<h3>Enter Details</h3>
+		<form action="updateproduct"><br>
+				
+			<table>
+			
+			<tr>
+			<td><b>Product Category</b></td>
+				<td><select  name="productcategory">
+                        <option value="Running shoes">Running shoes</option>
+                        <option value="Minimalist shoes">Minimalist shoes</option>
+                        <option value="Walking shoes">Walking shoes</option>
+                        <option value="Tennis shoes">Tennis shoes</option>
+                        <option value="Versatile training shoes">Versatile training shoes</option>
+                        <option value="Trail running shoes">Trail running shoes</option>
+                        <option value="Basketball shoes">Basketball shoes</option>
+                        <option value="Football boots">Football boots</option>
+                       
+                    </select></td>
+			
+			</tr>
+			<tr>
+			<td><b>Product Name</b></td>
+			<td><input type ="text" name="productname"  ></td>
+			</tr>
+			<tr>
+			<td><b>Product Price Rs</b></td>
+			<td><input type ="number" name="productprice"  >/-</td>
+			</tr>
+			<tr>
+			<td><b>Product Description</b></td>
+			<td><input type ="text" name="productdescription"  ></td>
+			</tr>
+			
+			</table>
+			<input type ="hidden" name="productid" value=<%=request.getParameter("productid")  %> >
+			
+			<br><input type ="submit"  value="Update Product">
+		</form>
+		
+		
+	</div>
+		
+		
+
+</body>
+</html>
+
+updatesucesshome.jsp
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Home</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	
+	<jsp:include page="home.jsp"></jsp:include>
+	
+	<span style = 'color:green'><h4 align="center">updated sucessfully</h4></span>
+</body>
+</html>
+productbyCategory.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>product category</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+			List<product> list=(List<product>)request.getAttribute("list");
+	%>
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		
+		<h3 align="right"><a href='userHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='showCart' style="text-decoration: none">Cart</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<br><br>
+		
+		
+	<table cellpadding ="5" cellspacing ="5"   style=font-size:25px >
+	<tr><th>Product Id</th><th>Product Name</th><th>Product Description</th><th>Product price</th><th>Select Size</th></tr>
+	<%for(product p:list){ %>
+	<tr style="text-align: center"><td><%=p.getProductid()%></td><td><%=p.getProductname() %></td><td><%=p.getProductdescription()%></td><td><%=p.getProductprice()%></td>
+	<td><select  name="size">
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                       
+                    </select></td>
+	<td><form action ="addtocart">
+	<input type="hidden" id="productid" name="productid" value=<%=p.getProductid() %>><input type="hidden" id="productcategory" name="productcategory" value=<%=p.getProductcategory()%>>
+	<input type="hidden" id="productname" name="productname" value=<%=p.getProductname() %>><input type="hidden" id="productprice" name="productprice" value=<%=p.getProductprice()%>>
+	<input type="hidden" id="productsize" name="productsize" value=<%=request.getParameter("size")  %>>
+	<input type="submit" name="add" value="Add to Cart" ></form></td>
+	</tr>
+	<%}%>
+	 </table>
+		
+		
+	</div>
+
+</body>
+</html>
+userHome.jsp
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>User Home</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		 	<h3 align="right"><a href='showCart' style="text-decoration: none">Cart</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+
+		<i><h4>Welcome to Sporty Shoes</h4></i>
+				<br><br>
+	 
+		<h2>Shop According to your Sprort</h2><br>
+		<i><h2><a href='productbycategory?productcategory=Running shoes' style="text-decoration: none">Running shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Minimalist Shoes' style="text-decoration: none">Minimalist Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Walking Shoes' style="text-decoration: none">Walking Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Tennis Shoes' style="text-decoration: none">Tennis Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Versatile training shoes' style="text-decoration: none">Versatile training shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Trail running shoes' style="text-decoration: none">Trail running shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Basketball shoes' style="text-decoration: none">Basketball shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Football boots' style="text-decoration: none">Football boots</a></h2></i>
+		</div>
+		
+</body>
+</html>
+
+Showcart.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="com.example.demo.cartrepositry"%>
+<%@page import="com.example.demo.product"%>
+<%@page import="com.example.demo.mainController"%>
+<%@page import="org.springframework.security.core.context.SecurityContextHolder"%>
+<%@page import="org.springframework.security.core.Authentication"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>cart</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+
+		<%
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    	String username = auth.getName();
+	    	
+	    	List<cart> list=(List<cart>)request.getAttribute("list");
+	    	
+	    	double totalprice =0;
+	    	
+		%>
+		
+		<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+		<h3 align="right"><a href='userHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+		<h3 align="left">Hai <%=username %></h3>
+		<h2 align="center">Your Cart</h2>
+		  
+	<table cellpadding ="5" cellspacing ="5"   style=font-size:20px >
+	<tr><th>Product Id</th><th>Product Name</th><th>Select Size</th><th>Product price</th></tr>
+	<%for(cart c:list){ %>
+	<tr style="text-align: center"><td><%=c.getProductid() %></td><td><%=c.getProductname() %></td>
+	<td><select  name="size">
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                       
+                    </select></td>
+    <td><%=c.getProductprice()%></td>
+    <td><form action = "removefromcart"><input type="hidden" id="cartid" name="cartid" value=<%=c.getCartid() %>><input type="submit" value="Remove from Cart" ></form></td></tr>
+    <%totalprice+=Double.parseDouble(c.getProductprice()); %>
+    
+    <%}%>
+
+    
+	 </table><br>
+	<h3>Total Price = <%=totalprice %></h3>
+	<% if(totalprice>0) {%>
+		
+			 <form action="payment.jsp"><input type="hidden" id="totalprice" name="totalprice" value=<%=totalprice %>><input style=font-size:20px type="submit" name ="add" value="    Buy    " ></form><br><br><br>
+		
+		<% } %>
+           
+	
+</body>
+
+addcartsucess.jsp
+
+</html>
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Home</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	
+	<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		 	<h3 align="right"><a href='showCart' style="text-decoration: none">Cart</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   <a href='logout' style="text-decoration: none">Logout</a></h3>
+	
+		<span style = 'color:green'><h4>Item added to cart Sucessfully</h4></span>		
+	  	
+	 
+		<h2>Shop According to your Sprort</h2><br>
+		<i><h2><a href='productbycategory?productcategory=Running shoes' style="text-decoration: none">Running shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Minimalist Shoes' style="text-decoration: none">Minimalist Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Walking Shoes' style="text-decoration: none">Walking Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Tennis Shoes' style="text-decoration: none">Tennis Shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Versatile training shoes' style="text-decoration: none">Versatile training shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Trail running shoes' style="text-decoration: none">Trail running shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Basketball shoes' style="text-decoration: none">Basketball shoes</a></h2>
+		<h2><a href='productbycategory?productcategory=Football boots' style="text-decoration: none">Football boots</a></h2></i>
+		</div>
+	
+</body>
+</html>
+failpayshowcart.jsp
+
+<%@page import="com.example.demo.*"%>
+<%@page import="com.example.demo.cartrepositry"%>
+<%@page import="com.example.demo.product"%>
+<%@page import="com.example.demo.mainController"%>
+<%@page import="org.springframework.security.core.context.SecurityContextHolder"%>
+<%@page import="org.springframework.security.core.Authentication"%>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<%@page import="java.util.*"%>
+<%@ page import="com.example.*"%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>cart</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+		<%
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	    	String username = auth.getName();
+	    	
+	    	List<cart> list=(List<cart>)request.getAttribute("list");
+	    	
+	    	double totalprice =0;
+	    	
+		%>
+		
+		<div align="center">
+		
+			<i><h1>SportyShoes</h1></i>
+		<h4 align="right"> - devloped by P Praveen kumar</h4><br>
+
+		<h3 align="right"><a href='userHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='logout' style="text-decoration: none">Logout</a></h3>
+		<h3 align="left">Hai <%=username %></h3>
+		<h2 align="center">Your Cart</h2>
+		  
+	<table cellpadding ="5" cellspacing ="5"   style=font-size:20px >
+	<tr><th>Product Id</th><th>Product Name</th><th>Select Size</th><th>Product price</th></tr>
+	<%for(cart c:list){ %>
+	<tr style="text-align: center"><td><%=c.getProductid() %></td><td><%=c.getProductname() %></td>
+	<td><select  name="size">
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                       
+                    </select></td>
+    <td><%=c.getProductprice()%></td>
+    <td><form action = "removefromcart"><input type="hidden" id="cartid" name="cartid" value=<%=c.getCartid() %>><input type="submit" value="Remove from Cart" ></form></td></tr>
+    <%totalprice+=Double.parseDouble(c.getProductprice()); %>
+    
+    <%}%>
+
+    
+	 </table><br>
+	<h3>Total Price = <%=totalprice %></h3>
+    <form action="payment.jsp"><input type="hidden" id="totalprice" name="totalprice" value=<%=totalprice %>><input style=font-size:20px type="submit" value="    Buy    " ></form><br><br><br>        
+	<br><b><center> <span style = 'color:red'>Hello user! Card details entered is wrong </span> </center></b>
+	
+</body>
+</html>
+
+paid.jsp
+
+<%@page import="java.util.Random"%>
+
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Booking confirm</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+
+<%
+   Random rand=new Random(); 
+	int tid=rand.nextInt(580009999,990009999);
+
+
+%>
+	<div align="center">
+		<i><h1>   &#9989; Payment Successful !</h1><br></i>
+		<h3>Thank you! Your order has been placed.</h3><br><br>
+		Booking ID :&nbsp;<%=request.getParameter("order") %> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		Transaction ID :&nbsp;<%=tid %> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		Total Amount Paid :&nbsp;<%=request.getParameter("amt")%> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<br>
+		<br>
+		<i><h4>Your Order details have been sent to your mail.</h3><i></i><br><br>
+		<form action="userHome.jsp"><input type="submit" value="Done"></form><br>
+	</div>
+</body>
+</html>
+payment.jsp
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@page import="java.util.*" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Payment GateWay</title>
+</head>
+<body style="background:url(picer.jpg)  no-repeat;background-size:90%  auto; ">
+	<%
+		
+			Random rand=new Random(); 
+			long ran=rand.nextInt(120001 ,122000);
+	  		String amount=request.getParameter("totalprice");
+	  		
+	%>
+
+	<div align="center">
+		<i><h1>SportyShoes</h1></i><br>
+		<h3 align="right"><a href='userHome.jsp' style="text-decoration: none">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='showCart' style="text-decoration: none">Cart</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <a href='logout' style="text-decoration: none">Logout</a></h3>
+		
+		<h2>SportyShoes.Pay</h2>
+		<i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		( A Secure Payment Gateway.)</i>
+		<form action="paymentcheck" ><br> 
+			<table>
+				<tr>
+					<td><b>Company</b></td><td>&nbsp;&nbsp;&nbsp;SportyShoes</td>
+				</tr>
+				<tr>
+					<td><b>Order Number</b></td><td>&nbsp;&nbsp;&nbsp;<%=ran %></td>
+				</tr>
+				<tr>
+					<td><b>Total Amount </b>Rs</td><td>&nbsp;&nbsp;&nbsp;<%=amount %> /-</td>
+				</tr>
+			</table><br>
+			<h3>Card Payment</h3>
+			<table>
+				
+				<tr>
+					<td><b>Card Number</b></td><td><input type ="number" name="cardno"></td>
+				</tr>
+				<tr>
+					<td><b>Expiry Date</b></td><td><input type="month" name="month"  min="2022" max="2100"></td>
+				</tr>
+				<tr>
+					<td><b>Password </b></td><td><input type ="password" name="psd"></td>
+				</tr>
+			</table><br>
+			<input type="submit" value="Pay"><br><br>
+			
+			
+			<input type="hidden" id ="order" name="order" value=<%=ran %>>
+			<input type="hidden" id ="amt" name="amt" value=<%=amount %>>
+			
+		
+		</form>
+	</div>
+</body>
+</html>
+Application.properties
+
+server.port=8085
+
+
+
+#jpa-hibernate
+spring.jpa.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+
+#data source
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/db7
+spring.datasource.username=root
+spring.datasource.password=root
